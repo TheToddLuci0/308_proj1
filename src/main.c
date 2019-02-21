@@ -6,7 +6,6 @@
 
 #include <argp.h>
 #include <argz.h>
-#include <jmorecfg.h>
 
 #define MAX_LINE 1000
 
@@ -65,13 +64,14 @@ static struct argp argp = {options, parse_opt, args_doc, doc};
 /************************************/
 
 void parse_line(char str[]) {
-    boolean REAL_FORK = 0;
+    int REAL_FORK = 0;
     char raw[MAX_LINE];
     strcpy(raw, str);
     if (raw[strlen(raw) - 1] == '&') {
-        str[strlen(raw) - 1] = '\0';
+        raw[strlen(raw) - 1] = '\0';
         REAL_FORK = 1;
     }
+    if(!strlen(raw)) return;
     char *command = strtok(str, " ");
     if (!strcmp(command, "exit")) {
         // Terminate and accept no further input from the user
@@ -112,8 +112,8 @@ void parse_line(char str[]) {
             printf("%s\n", var);
         }
     } else {
-        printf("Test failed, command was '%s'\n", command);
-        printf("Raw input was %s\n", raw);
+//        printf("Test failed, command was '%s'\n", command);
+//        printf("Raw input was %s\n", raw);
         int ar = 0, i = 0;
         for (i = 0; i < strlen(raw); i++) {
             if (raw[i] == ' ') {
@@ -128,16 +128,23 @@ void parse_line(char str[]) {
             arr[i] = strtok(NULL, " ");
             i++;
         }
+        int status;
         int p = fork();
         if (!p) {
             printf("Am a kid, number %d\n", getpid());
             int stat = execvp(command, arr);
-            printf("%d\n", stat);
+            if (stat == -1){
+                printf("Command '%s' likely not found", command);
+            } else{
+                printf("Status: %d\n", stat);
+            }
             exit(stat);
         } else if (!REAL_FORK) {
-            printf("Am a dad\n");
-            waitpid(p, NULL, 0);
-            printf("My child has died\n");
+//            printf("Am a dad\n");
+            waitpid(p, &status, 0);
+            const int es = WEXITSTATUS(status);
+            printf("exit status was %d\n", es);
+//            printf("My child has died\n");
         }
     }
 }
@@ -159,7 +166,11 @@ int main(int argc, char **argv) {
         prompt = arguments.prompt;
     }
     while (1) {
-        waitpid(-1, NULL, WNOHANG);
+        int status;
+        if(waitpid(-1, &status, WNOHANG) > 0){
+            const int es = WEXITSTATUS(status);
+            printf("exit status was %d\n", es);
+        }
         char str[MAX_LINE];
         printf("%s ", prompt);
         fgets(str, 1000, stdin);
