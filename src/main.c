@@ -7,6 +7,8 @@
 #include <argp.h>
 #include <argz.h>
 
+#define MAX_LINE 1000
+
 
 /************************************/
 /*        ARGP SECTION              */
@@ -61,8 +63,8 @@ static struct argp argp = {options, parse_opt, args_doc, doc};
 /*        LOGIC SECTION             */
 /************************************/
 
-void parse_line(char *str) {
-    char *raw;
+void parse_line(char str[]) {
+    char raw[MAX_LINE];
     strcpy(raw, str);
     char *command = strtok(str, " ");
     if (!strcmp(command, "exit")) {
@@ -78,7 +80,7 @@ void parse_line(char *str) {
         return;
     } else if (!strcmp(command, "cd")) {
         // Change the working directory, $HOME if no arg given
-        char *copy;
+        char copy[MAX_LINE];
         strcpy(copy, str);
         char *dir = strtok(NULL, " ");
         if (dir == NULL) {
@@ -106,27 +108,36 @@ void parse_line(char *str) {
     } else {
         printf("Test failed, command was '%s'\n", command);
         printf("Raw input was %s\n", raw);
-        int ar, i = 0;
-//        for (i = 0; i < strlen(str); i++) {
-//            if (str[i] == ' ') {
-//                ar++;
-//            }
-//        }
-//        char strs[ar][500+1];
-        i=0;
-//        while (str != NULL) {
-//            arr[i] = strtok(NULL, " ");
-//        }
-//        int p = fork();
-//        if(!p) {
-//            execvp(command, arr);
-//        } else{
-//            waitpid(p, NULL, 0);
-//        }
+        int ar = 0, i = 0;
+        for (i = 0; i < strlen(raw); i++) {
+            if (raw[i] == ' ') {
+                ar++;
+            }
+        }
+        ar++;
+        char *arr[ar+2];
+        i=1;
+        arr[0] = strtok(raw, " ");
+        while (i<ar) {
+            arr[i] = strtok(NULL, " ");
+            i++;
+        }
+        int p = fork();
+        if(!p) {
+            printf("Am a kid\n");
+            int stat = execvp(command, arr);
+            exit(stat);
+        } else{
+            printf("Am a dad\n");
+            waitpid(p, NULL, 0);
+            printf("My child has died\n");
+        }
     }
 }
 
-
+// Suppress warning about the infinite loop in some compilers
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
 int main(int argc, char **argv) {
     struct arguments arguments;
     int arg_count = 1;
@@ -139,10 +150,14 @@ int main(int argc, char **argv) {
     } else {
         prompt = arguments.prompt;
     }
-    char* str;
     while (1) {
+        waitpid(-1, NULL, WNOHANG);
+        char str[MAX_LINE];
         printf("%s ", prompt);
-        fgets(str, 100, stdin);
+        fgets(str, 1000, stdin);
+        if(str[strlen(str)-1] == '\n')
+            str[strlen(str)-1] = '\0';
         parse_line(str);
     }
 }
+#pragma clang diagnostic pop
