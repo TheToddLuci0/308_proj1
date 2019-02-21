@@ -6,6 +6,7 @@
 
 #include <argp.h>
 #include <argz.h>
+#include <jmorecfg.h>
 
 #define MAX_LINE 1000
 
@@ -64,8 +65,13 @@ static struct argp argp = {options, parse_opt, args_doc, doc};
 /************************************/
 
 void parse_line(char str[]) {
+    boolean REAL_FORK = 0;
     char raw[MAX_LINE];
     strcpy(raw, str);
+    if (raw[strlen(raw) - 1] == '&') {
+        str[strlen(raw) - 1] = '\0';
+        REAL_FORK = 1;
+    }
     char *command = strtok(str, " ");
     if (!strcmp(command, "exit")) {
         // Terminate and accept no further input from the user
@@ -115,19 +121,20 @@ void parse_line(char str[]) {
             }
         }
         ar++;
-        char *arr[ar+2];
-        i=1;
+        char *arr[ar + 2];
+        i = 1;
         arr[0] = strtok(raw, " ");
-        while (i<ar) {
+        while (i < ar) {
             arr[i] = strtok(NULL, " ");
             i++;
         }
         int p = fork();
-        if(!p) {
-            printf("Am a kid\n");
+        if (!p) {
+            printf("Am a kid, number %d\n", getpid());
             int stat = execvp(command, arr);
+            printf("%d\n", stat);
             exit(stat);
-        } else{
+        } else if (!REAL_FORK) {
             printf("Am a dad\n");
             waitpid(p, NULL, 0);
             printf("My child has died\n");
@@ -138,6 +145,7 @@ void parse_line(char str[]) {
 // Suppress warning about the infinite loop in some compilers
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
+
 int main(int argc, char **argv) {
     struct arguments arguments;
     int arg_count = 1;
@@ -155,9 +163,10 @@ int main(int argc, char **argv) {
         char str[MAX_LINE];
         printf("%s ", prompt);
         fgets(str, 1000, stdin);
-        if(str[strlen(str)-1] == '\n')
-            str[strlen(str)-1] = '\0';
+        if (str[strlen(str) - 1] == '\n')
+            str[strlen(str) - 1] = '\0';
         parse_line(str);
     }
 }
+
 #pragma clang diagnostic pop
