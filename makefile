@@ -1,8 +1,7 @@
 IDIR =include
 CC=gcc
-DEPRICATION= -Wno-deprecated -Wno-deprecated-declarations
 
-CFLAGS=-I$(IDIR) $(DEPRICATION)
+CFLAGS=-I$(IDIR)
 ODIR=obj
 LDIR=lib
 
@@ -24,4 +23,4 @@ shell: $(OBJ)
 .PHONY: clean
 
 clean:
-rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~
+	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~
