@@ -101,7 +101,6 @@ void parse_line(char str[]) {
         // Change the working directory, $HOME if no arg given
         char *dir[MAX_LINE];
         *dir = strtok(NULL, " ");
-        printf("%s\n", *dir);
         if (*dir == NULL || strcmp(*dir, "") == 0) {
             *dir = getenv("HOME");
         }
